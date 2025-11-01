@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>小栈 Paillier半同态加密算法和优化加速 | 小栈</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="shortcut icon" href="/imgs/shortcut-icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/public.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/iconfont.css" />
+  <link rel="stylesheet" href="/css/APlayer.min.css" />
+  <script src="/js/APlayer.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/jquery.pjax.min.js"></script>
+
+  <!-- KaTeX for formula rendering
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js"></script>
+  <script>
+    // renderKatex 会在 DOMContentLoaded 与 pjax 完成时调用，安全地渲染行内 $...$ 与 $$...$$
+    function renderKatex() {
+      if (window.renderMathInElement) {
+        try {
+          renderMathInElement(document.body, {
+            // 支持行内与行间两种定界符
+            delimiters: [
+              {left: '\\begin', right: '\\end', display: true},
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+            ],
+            // 避免渲染代码块、脚本、样式等
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            throwOnError: false
+          });
+        } catch (e) {
+          // 防止因单篇文章的公式错误导致整个页面报错
+          console.warn('KaTeX render error:', e);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderKatex);
+    // pjax 完成后（主题使用 pjax），需要重新渲染动态加载的页面内容
+    document.addEventListener('pjax:complete', renderKatex);
+  </script> -->
+  <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+  <script>
+    document.title = `小栈 Paillier半同态加密算法和优化加速`
+  </script>
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<style>
+  .load {
+    width: 100%;
+    height: 100vh;
+    background-color: rgb(37, 35, 40);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 9999;
+  }
+  .load-circle {
+    width: 80px;
+    height: 80px;
+    border: 8px solid orange;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: rotate 1s linear infinite;
+    filter: drop-shadow(0 0 3px orange);
+  }
+  .load-circle-inner {
+    width: 40px;
+    height: 40px;
+    border: 8px solid orange;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: rotate-reverse .5s linear infinite;
+  }
+  .load-text {
+    margin-top: 20px;
+    font-size: 24px;
+    color: orange;
+    display: flex;
+  }
+  .load-text span {
+    margin: 0 5px;
+    text-shadow: 5px 5px 5px orange;
+    animation: move 1s linear infinite;
+  }
+  .load-text span:nth-child(1) {
+    animation-delay: -0.6s;
+  }
+  .load-text span:nth-child(2) {
+    animation-delay: -0.5s;
+  }
+  .load-text span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  .load-text span:nth-child(4) {
+    animation-delay: -0.3s;
+  }
+  .load-text span:nth-child(5) {
+    animation-delay: -0.2s;
+  }
+  .load-text span:nth-child(6) {
+    animation-delay: -0.1s;
+  }
+  @keyframes rotate {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes rotate-reverse {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes move {
+    0% { transform: translateY(0%) rotate(0) scale(1); }
+    20% { transform: translateY(20%) rotate(10deg) scale(1.2); }
+    80% { transform: translateY(-10%) rotate(-20deg) scale(.8);}
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  .progress {
+    position: fixed;
+    left: 0; top: 0;
+    width: 0;
+    height: 3px;
+    background-color: green;
+    transition: all cubic-bezier(0.215, 0.610, 0.355, 1) .1s;
+    z-index: 9999;
+  }
+
+  .to-up {
+    animation: toUp .5s 1;
+  }
+  .gray {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    background-color: #000;
+    mix-blend-mode: color;
+  }
+  @keyframes toUp {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0) ; opacity: 1; }
+  }
+</style>
+<body>
+  <div id="load" class="load">
+    <div class="load-circle">
+      <div class="load-circle-inner"></div>
+    </div>
+    <p class="load-text">
+      <span>L</span>
+      <span>O</span>
+      <span>A</span>
+      <span>D</span>
+      <span>I</span>
+      <span>N</span>
+      <span>G</span>
+    </p>
+  </div>
+  <div id="container" class="container w-100 vh-100" style="display: none;">
+    <header class="header">
+  <div class="header-wrapper">
+    <div class="header-left">
+      <div class="header-search">
+        <input id="search-input" type="text" class="header-search--input" placeholder="请输入要检索的文章标题" />
+        <span id="search-btn" class="header-search--icon"><i class="iconfont icon-sousuo"></i></span>
+      </div>
+      <div id="search-layer" class="header-search--layer hidden">
+        <p class="title">
+          <span>以下是搜索内容：</span>
+          <span id="close-layer-btn">关闭</span>
+        </p>
+        <ul>
+        </ul>
+      </div>
+    </div>
+    <div class="header-right">
+      <ul class="header-menu">
+        <li>
+          <a href="https://blog.0xc0de.top/">
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+            <span class="header-menu--span">首页</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://blog.0xc0de.top/log">
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+            <span class="header-menu--span">日志</span>
+          </a>
+        </li>
+        <!-- <li>
+          <a href="https://blog.0xc0de.top/link">
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+            <span class="header-menu--span">友情链接</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://blog.0xc0de.top/about">
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+            <span class="header-menu--span">关于我</span>
+          </a>
+        </li> -->
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  const ipt = document.querySelector('#search-input')
+  const btn = document.querySelector('#search-btn')
+  const layer = document.querySelector('#search-layer')
+  const posts = JSON.parse(`[{"title":"Paillier半同态加密算法和优化加速","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/Paillier半同态加密算法和优化加速/"},{"title":"docker实现网络互通及流量控制","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/docker实现网络互通及流量控制/"},{"title":"Hello World","cover":"/imgs/default-cover.webp","path":"2025/10/31/hello-world/"}]`)
+  ipt.addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  })
+  btn.addEventListener('click', () => {
+    handleSearch()
+  })
+
+  document.querySelector('#close-layer-btn').addEventListener('click', () => {
+    layer.classList.toggle('hidden')
+  })
+
+  function handleSearch() {
+    if (ipt.value.trim() === '') {
+      return
+    }
+    let html = ''
+    const targetPosts = posts.filter(post => post.title.includes(ipt.value))
+    targetPosts.forEach(post => {
+      html += `
+        <li>
+          <div>
+            <a href="/${post.path}">${post.title.replace(new RegExp(ipt.value), `<span>${ipt.value}</span>`)}</a>
+          </div>
+          <img src="${post.cover || '/imgs/default-cover.webp' }" />
+        </li>
+      `
+    })
+    if (html.trim () === '') {
+      html += '<p class="empty">没有搜索到内容</p>'
+    }
+    layer.querySelector('ul').innerHTML = html
+    layer.classList.remove('hidden')
+  }
+</script> 
+    <section id="main" class="main">
+      <div class="main-left-wrapper">
+<div class="main-left">
+  <div class="main-left--block">
+    <div class="main-left--info">
+      <img src="/imgs/head.jpg"" class="main-left--head" />
+      <div class="main-left--intro">
+        <p class="main-left--name">格</p>
+        <div class="main-left--tags">
+          <span class="main-left--tag">密码学</span>
+          <span class="main-left--tag">AI</span>
+        </div>
+      </div>
+    </div>
+  
+    <div>
+      <div class="main-left--motto">
+        <p>练得身形似鹤形</p>
+        <p>千株松下两函经</p>
+      </div>
+      <div class="main-left--github">
+        <span class="line"></span>
+        <a target="_blank" rel="noopener" href="https://github.com/schzene"><i class="logo iconfont icon-github-fill"></i></a>
+        <span class="line"></span>
+      </div>
+      <div class="main-left--statics">
+        <a href="/categories">
+          <div>
+            <span>2</span>
+            <span>分类</span>
+          </div>
+        </a>
+        <a href="/tags">
+          <div>
+            <span>2</span>
+            <span>标签</span>
+          </div>
+        </a>
+        <a href="/archives">
+          <div>
+            <span>1 </span>
+            <span>归档</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-left--block">
+    <ul class="main-left--menu">
+      
+        <li>
+          <a href="/">
+            <span class="header-menu--span">小站首页</span>
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/log">
+            <span class="header-menu--span">个人日志</span>
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/link">
+            <span class="header-menu--span">友情链接</span>
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+  <div class="main-left--block">
+    <div class="main-left--site">
+      <h5 class="main-left--title">
+        <span>站点信息</span>
+        <i class="iconfont icon-zhandian"></i>
+      </h5>
+      <p class="main-left--subtitle">
+        <span>文章数目：</span>
+        <span>3 篇</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>最近动态：</span>
+        <span>今天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>上线时间：</span>
+        <span>2天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>当前版本：</span>
+        <span>v1.0.2</span>
+      </p>
+    </div>
+  </div>
+</div></div>
+      <div id="main-container" class="main-container">
+
+
+  <link rel="stylesheet" href="/css/partial/article.css" />
+
+<div class="article-container">
+  <div class="article">
+    <h1 class="article-title">Paillier半同态加密算法和优化加速</h1>
+    <div class="article-info">
+      <div class="article-info--item">
+        <div class="article-info--info">
+          
+          <div class="article-info--categories">
+            <span>分类：</span>
+            <a class="category-link" href="/categories/%E5%AF%86%E7%A0%81%E5%AD%A6/">密码学</a>
+          </div>
+          
+          
+          <div class="article-info--tags">
+            <span>标签：</span>
+            <a class="tag-link" href="/tags/paillier/" rel="tag">paillier</a>
+          </div>
+          
+          <p class="article-info--date">日期：2025-10-31 22:07:47</p>
+        </div>
+        <img src="/imgs/default-cover.jpeg" alt="" class="article-cover">
+      </div>
+    </div>
+    <article class="article-content markdown-body">
+      <p>Paillier 算法是一种经典的半同态加密算法，其密文具有加法同态性。本文介绍Paillier算法的密钥生成、加解密、同态加、同态乘以及算法的优化加速。</p>
+<h1 id="Pailler-算法具体内容"><a href="#Pailler-算法具体内容" class="headerlink" title="Pailler 算法具体内容"></a>Pailler 算法具体内容</h1><h2 id="密钥生成"><a href="#密钥生成" class="headerlink" title="密钥生成"></a>密钥生成</h2><ol>
+<li><p>随机选取两个大素数\(p\)和\(q\)，取\( n&#x3D;pq \)，\(\Phi(n)&#x3D;(p-1)(q-1)\)，满足\(\left|p\right|&#x3D;\left|q\right|&#x3D;k\)（\(p\)和\(q\)长度相等），且\(gcd(n,\Phi(n))&#x3D;1\)（最大公约数为1）；</p>
+</li>
+<li><p>计算\(n&#x3D;pq\)以及\(\lambda&#x3D;lcm(p-1,q-1)\)（最小公倍数）；</p>
+</li>
+<li><p>随机选取整数\(g\in\mathbb Z^*_{n^2}\)，满足\(\mu&#x3D;(L(g^\lambda\mod n^2))^{-1}\mod n\)存在，其中\(L(x)&#x3D;(x-1)&#x2F;n\)；</p>
+</li>
+<li><p>公钥为：\((n,g)\)，私钥为：\((\lambda,\mu)\)。</p>
+</li>
+</ol>
+<h2 id="加密-Encrypt-m"><a href="#加密-Encrypt-m" class="headerlink" title="加密 \(Encrypt(m)\)"></a>加密 \(Encrypt(m)\)</h2><ol>
+<li><p>输入明文\(m\)，满足\(0\le m \le n\)；</p>
+</li>
+<li><p>选择随机数\(r\in \mathbb Z^*_n\)，且\(gcd(r,n)&#x3D;1\)；</p>
+</li>
+<li><p>计算密文\(c&#x3D;g^mr^n\mod n^2\)；</p>
+<p>若\(g&#x3D;n+1\)，则\(g^m\mod n^2&#x3D;(mn+1)\mod n^2\)。</p>
+</li>
+</ol>
+<h2 id="解密-Decrypt-c"><a href="#解密-Decrypt-c" class="headerlink" title="解密 \(Decrypt(c)\):"></a>解密 \(Decrypt(c)\):</h2><ol>
+<li><p>输入密文c，满足\(c\in\mathbb Z^*_{n^2}\)；</p>
+</li>
+<li><p>计算明文\(m&#x3D;\frac{L(c^\lambda\mod n^2)}{L(g^\lambda\mod n^2)}\mod n&#x3D;L(c^\lambda\mod n^2)\cdot\mu\mod n\)。</p>
+</li>
+</ol>
+<h2 id="密文-密文同态加法"><a href="#密文-密文同态加法" class="headerlink" title="密文-密文同态加法:"></a>密文-密文同态加法:</h2><p>返回 \(c&#x3D;c_1\cdot c_2\mod n^2\)。</p>
+<h2 id="密文-明文同态乘法"><a href="#密文-明文同态乘法" class="headerlink" title="密文-明文同态乘法:"></a>密文-明文同态乘法:</h2><p>返回 \(c&#x3D;c_1^{m_2} \mod n^2\)。</p>
+<h2 id="加解密正确性："><a href="#加解密正确性：" class="headerlink" title="加解密正确性："></a>加解密正确性：</h2><p>\begin{align}<br>&amp;\lambda&#x3D;l_1(p-1)&#x3D;l_2(q-1)\\<br>&amp;g^\lambda&#x3D;g^{l_1(p-1)}&#x3D;(g^{p-1})^{l_1}\equiv1\mod p（费马小定理）\\<br>&amp;同理，g^\lambda\equiv1\mod q\\<br>&amp;故，g^\lambda\equiv1\mod(pq)\equiv1\mod n，即g^\lambda\mod n&#x3D;(1+l\cdot n)\mod n\\<br>&amp;也即，g^{n\lambda}\equiv1\mod n^2\\\\<br>Decrypt(Encrypt(m))&amp;&#x3D;Decrypt(g^mr^n\mod n^2)\\<br>&amp;&#x3D;L((g^mr^n)^\lambda\mod n^2)\cdot\mu\mod n\\<br>&amp;&#x3D;\frac{L((g^\lambda)^m\mod n^2)}{L(g^\lambda\mod n^2)}\\<br>&amp;&#x3D;\frac{L((1+lm\cdot n)\mod n^2)}{L(1+l\cdot n)\mod n^2}\\<br>&amp;&#x3D;\frac{lm\cdot n}{l\cdot n}&#x3D;m<br>\end{align}</p>
+<h2 id="密文-密文同态加正确性："><a href="#密文-密文同态加正确性：" class="headerlink" title="密文-密文同态加正确性："></a>密文-密文同态加正确性：</h2><p>\begin{align}<br>Decrypt((c_1\cdot c_2)\mod n^2)&amp;&#x3D;Decrypt(g^{m_1}r_1^ng^{m^2}r_2^n\mod n^2)\\<br>&amp;&#x3D;Decrypt(g^{(m_1+m_2)}r_1^nr_2^n\mod n^2)\\<br>&amp;&#x3D;m_1+m_2<br>\end{align}</p>
+<h2 id="密文-明文同态乘正确性："><a href="#密文-明文同态乘正确性：" class="headerlink" title="密文-明文同态乘正确性："></a>密文-明文同态乘正确性：</h2><p>\begin{align}<br>Decrypt((c_1^{m_2})\mod n^2)&amp;&#x3D;Decrypt((g^{m_1}r^n)^{m^2}\mod n^2)\\<br>&amp;&#x3D;Decrypt(g^{m_1m_2}r^{nm_2}\mod n^2)\\<br>&amp;&#x3D;m_1m_2<br>\end{align}</p>
+<h2 id="安全性："><a href="#安全性：" class="headerlink" title="安全性："></a>安全性：</h2><p>方案安全性可以归约到判定性合数剩余假设（Decisional Composite Residuosity Assumption, DCRA），即给定一个合数\(n\)和整数\(z\)，很难判定\(z\) 在模\(n^2\)下是否是\(n\)次剩余（目前为止还没有多项式时间的算法可以攻破），即是否存在\(y\)满足\(z\equiv y^n(\mod n^2)\)。</p>
+<h1 id="Paillier-算法优化"><a href="#Paillier-算法优化" class="headerlink" title="Paillier 算法优化"></a>Paillier 算法优化</h1><h2 id="快速密钥生成"><a href="#快速密钥生成" class="headerlink" title="快速密钥生成"></a>快速密钥生成</h2><ol>
+<li><p>令\(g&#x3D;n+1\)，\(\lambda&#x3D;\Phi(n)\)，\(\mu&#x3D;(\lambda^{-1})\mod n\)；</p>
+</li>
+<li><p>其余和密钥生成内容相同。</p>
+</li>
+</ol>
+<h2 id="加密优化"><a href="#加密优化" class="headerlink" title="加密优化"></a>加密优化</h2><p>若\(g &#x3D; n + 1\)，则</p>
+<h2 id="解密优化"><a href="#解密优化" class="headerlink" title="解密优化"></a>解密优化</h2><p>若有素数\(p\)和\(q\)，\(n&#x3D;pq\)，计算模指数\(a^b\mod n\)时，可采用中国剩余定理（Chinese remainder theorem， CRT）优化，即先把\(a^b\)映射到\(\mathbb Z_p\)、\(\mathbb Z_q\)上计算，再将结果聚合到\(\mathbb Z_n\)，可得最终结果。</p>
+<ol>
+<li><p>（映射到\(\mathbb Z_p\)）令\(x_p&#x3D;a^{b_p}_p\)，其中\(a_p&#x3D;a\mod p\)，通过欧拉定理，\(a_p^{p-1}&#x3D;1\mod n\)，故\(b_p&#x3D;b\mod(p-1)\)</p>
+</li>
+<li><p>（映射到\(\mathbb Z_q\)）令\(x_q&#x3D;a^{b_q}_q\)，其中\(a_q&#x3D;a\mod q\)，\(b_q&#x3D;b\mod(q-1)\)</p>
+</li>
+<li><p>使用\(CRT\)通项公式：\(x&#x3D;x_p\cdot q^{-1}(\mod p)\cdot q+x_q\cdot p^{-1}(\mod q)\cdot p\)，根据裴蜀定理，由于\(p\)、\(q\)互素，则\(q^{-1}(\mod p)\cdot q+p^{-1}(\mod q)\cdot p&#x3D;1\)，故：</p>
+</li>
+</ol>
+<p>\begin{align}<br>x&amp;&#x3D;x_p\cdot q^{-1}(\mod p)\cdot q+x_q\cdot p^{-1}(\mod q)\cdot p\\<br>&amp;&#x3D;x_p\cdot(1-p^{-1}(\mod q)\cdot p)+x_q\cdot p^{-1}(\mod q)\cdot p\\<br>&amp;&#x3D;x_p+(x_q-x_p)\cdot p^{-1}(\mod q)\cdot p<br>\end{align}</p>
+<p>应用到解密中，令\(L_p(x)&#x3D;\frac{x-1}{p}\)，\(L_q(x)&#x3D;\frac{x-1}{q}\)，计算：</p>
+<ol>
+<li><p>\(h_p&#x3D;L_p(g^{p-1}\mod p^2)^{-1}\mod p\)，\(h_q&#x3D;L_q(g^{q-1}\mod q^2)^{-1}\mod q\)</p>
+</li>
+<li><p>\(m_p&#x3D;L_p(c^{p-1}\mod  p^2)\cdot h_p\mod p\)，\(m_q&#x3D;L_q(c^{q-1}\mod  q^2)\cdot h_q\mod q\)</p>
+</li>
+<li><p>\(m&#x3D;CRT(m_p,m_q)\mod n&#x3D;m_p+(m_q-m_p)\cdot p^{-1}(\mod q)\cdot p\)</p>
+</li>
+</ol>
+
+    </article>
+    
+    <div class="read-nums">
+      <!-- id 将作为查询条件 -->
+      <span id="2025/10/31/Paillier半同态加密算法和优化加速/" class="leancloud_visitors" data-flag-title="Your Article Title">
+        <em class="post-meta-item-text">浏览量</em>
+        <i class="leancloud-visitors-count"></i>
+      </span>
+    </div>
+    <div class="comments-intro">
+      <h2>评论区</h2>
+      <p>欢迎你留下宝贵的意见，昵称输入QQ号会显示QQ头像哦~</p>
+    </div>
+    <div id="vcomments" class="vcomments"></div>
+    
+  </div>
+  <div class="article-catelogue">
+    <div class="article-catelogue--wrapper">
+      <div class="catelogue catelogue-1">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Pailler-%E7%AE%97%E6%B3%95%E5%85%B7%E4%BD%93%E5%86%85%E5%AE%B9"><span class="toc-number">1.</span> <span class="toc-text">Pailler 算法具体内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90"><span class="toc-number">1.1.</span> <span class="toc-text">密钥生成</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E5%AF%86-Encrypt-m"><span class="toc-number">1.2.</span> <span class="toc-text">加密 \(Encrypt(m)\)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%AF%86-Decrypt-c"><span class="toc-number">1.3.</span> <span class="toc-text">解密 \(Decrypt(c)\):</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%86%E6%96%87-%E5%AF%86%E6%96%87%E5%90%8C%E6%80%81%E5%8A%A0%E6%B3%95"><span class="toc-number">1.4.</span> <span class="toc-text">密文-密文同态加法:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%86%E6%96%87-%E6%98%8E%E6%96%87%E5%90%8C%E6%80%81%E4%B9%98%E6%B3%95"><span class="toc-number">1.5.</span> <span class="toc-text">密文-明文同态乘法:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E8%A7%A3%E5%AF%86%E6%AD%A3%E7%A1%AE%E6%80%A7%EF%BC%9A"><span class="toc-number">1.6.</span> <span class="toc-text">加解密正确性：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%86%E6%96%87-%E5%AF%86%E6%96%87%E5%90%8C%E6%80%81%E5%8A%A0%E6%AD%A3%E7%A1%AE%E6%80%A7%EF%BC%9A"><span class="toc-number">1.7.</span> <span class="toc-text">密文-密文同态加正确性：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%86%E6%96%87-%E6%98%8E%E6%96%87%E5%90%8C%E6%80%81%E4%B9%98%E6%AD%A3%E7%A1%AE%E6%80%A7%EF%BC%9A"><span class="toc-number">1.8.</span> <span class="toc-text">密文-明文同态乘正确性：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E6%80%A7%EF%BC%9A"><span class="toc-number">1.9.</span> <span class="toc-text">安全性：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Paillier-%E7%AE%97%E6%B3%95%E4%BC%98%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">Paillier 算法优化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90"><span class="toc-number">2.1.</span> <span class="toc-text">快速密钥生成</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E5%AF%86%E4%BC%98%E5%8C%96"><span class="toc-number">2.2.</span> <span class="toc-text">加密优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%AF%86%E4%BC%98%E5%8C%96"><span class="toc-number">2.3.</span> <span class="toc-text">解密优化</span></a></li></ol></li></ol>
+      </div>
+      
+        <div class="catelogue catelogue-2">
+           
+          
+            <p>
+              <span>下一篇</span>
+              <a href="/2025/10/31/docker实现网络互通及流量控制/">docker实现网络互通及流量控制</a>
+            </p>
+          
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // var定义，避免pjax重新进来造成的重复声明错误
+  var config = JSON.parse('{"enable":true,"appId":"Pf8zCXGEH1qsprnWfikVVujL-gzGzoHsz","appKey":"qOqoiUHhH1TGtLRUYURkLRQX","placeholder":"请留下你宝贵的意见吧~","meta":["nick"],"recordIP":true,"visitor":true,"enableQQ":true}')
+  new Valine({
+    el: '#vcomments',
+    appId: config.appId,
+    appKey: config.appKey,
+    placeholder: config.placeholder,
+    meta: config.meta,
+    recordIP: config.recordIP,
+    visitor: config.visitor,
+    enableQQ: config.enableQQ,
+    path: '2025/10/31/Paillier半同态加密算法和优化加速/'
+  })
+</script>
+
+
+<script>
+  $(document).on('pjax:complete', function() {
+    const tocs = document.querySelector('.toc')
+    const links = tocs ? tocs.querySelectorAll('a') : []
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        const href = decodeURIComponent(e.href)
+        href.search(/#(.*)/)
+        const id = RegExp.$1
+        const target = document.querySelector('#' + id)
+        const top = target.offsetTop
+        document.documentElement.scrollTo({
+          top: top - 100,
+          behavior: 'smooth'
+        })
+        e.preventDefault()
+      })
+    })
+  })
+</script> 
+
+</div>
+      <div class="main-right-wrapper"><div class="main-right">
+  <div class="main-right--board">
+    <div class="main-right--title">
+      <h5>公告栏</h5>
+      <i class="iconfont icon-gonggao"></i>
+    </div>
+    <div class="main-right--content">
+      不知道写啥 
+    </div>
+  </div>
+
+  <!-- <div id="aplayer" class="main-right--music"></div> -->
+
+  <div class="operate-items">
+    <div class="operate-item backtop">
+      <i class="iconfont icon-huidaodingbu"></i>
+      <span>回到顶部</span>
+    </div>
+    
+    <div class="operate-item turn-comment hidden">
+      <i class="iconfont icon-pinglun"></i>
+      <span>查看评论</span>
+    </div>
+    
+  </div>
+
+  <div class="main-right--site">
+    <div class="main-right--power">
+      <p>Power By <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/">Hexo</a>.</p>
+      <p>Theme：<a target="_blank" rel="noopener" href="https://github.com/Aizener/hexo-theme-cola">Cola.</a></p>
+    </div>
+    <p class="main-right--refer"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">123445</a> </p>
+  </div>
+</div>
+
+<script>
+  function setOperateItem () {
+    const reg = /\d{4}\/\d{2}\/\d{2}\/.+/
+    const path = location.pathname
+    const operateDom = document.querySelector('.main-right .operate-items')
+    const commentDom = document.querySelector('.turn-comment')
+    const cateloguDom = document.querySelector('.article-catelogue > .article-catelogue--wrapper');
+
+    if (commentDom) {
+      if (reg.test(path) || path.match(/\/log\/.+/)) {
+        commentDom.classList.remove('hidden')
+        const newDom = operateDom.cloneNode(true);
+        const _backtopDom = newDom.querySelector('.backtop');
+        const _commentDom = newDom.querySelector('.turn-comment');
+        _backtopDom.addEventListener('click', () => backTopEvent());
+        _commentDom.addEventListener('click', () => commentDomEvent());
+        cateloguDom.appendChild(newDom);
+      } else {
+        commentDom.classList.add('hidden')
+      }
+    }
+  }
+
+  setOperateItem()
+  const musics = JSON.parse(`[{"name":"安河桥","artist":"宋冬野","url":"http://ting6.yymp3.net:82/new25/songdongye/11.mp3","cover":"https://img2.baidu.com/it/u=1260056724,1076343118&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500"}]`)
+  const ap = new APlayer({
+    container: document.querySelector('#aplayer'),
+    audio: musics,
+  })
+
+  $(document).on('pjax:complete', function() {
+    setOperateItem()
+  })
+
+  document.querySelector('.backtop').addEventListener('click', () => {
+    backTopEvent();
+  })
+  const dom = document.querySelector('.turn-comment')
+  dom && dom.addEventListener('click', () => {
+    commentDomEvent();
+  })
+
+  function backTopEvent() {
+    document.documentElement.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  function commentDomEvent() {
+    const commentDom = document.querySelector('.comments-intro')
+    if (!commentDom) return
+    const top = commentDom.offsetTop, height = commentDom.offsetHeight
+    document.documentElement.scrollTo({
+      top: top - 2 * height,
+      behavior: 'smooth'
+    })
+  }
+</script></div>
+    </section>
+  </div>
+  <div id="progress" class="progress"></div>
+  <div id="gray" class="gray"></div>
+
+  <script>
+    function initScroll () {
+      document.addEventListener('scroll', () => {
+        const doc = document.documentElement
+        const scrollTop = doc.scrollTop
+        const pageHeight = doc.offsetHeight
+        const clientHeight = doc.clientHeight
+        const ratio = scrollTop / (pageHeight - clientHeight)
+        const progress = document.querySelector('#progress')
+        const headImg = document.querySelector('.main-left--head')
+        progress.style.width = (100 * ratio) + '%'
+        headImg.style.transform = `rotate(${360 * ratio}deg)`
+      })
+    }
+
+    const rootPath = "/"
+
+    const checkAndSetArticlePageLayout = () => {
+      const path = location.pathname.replace(rootPath, '');
+      if (
+        /^\/?\d{4}\/\d{2}\/\d{2}\/.*/.test(path) ||
+        /^log\/.+/.test(path)
+      ) {
+        $('.main-container, .main-right, .main-right-wrapper').addClass('is-article')
+      } else {
+        $('.main-container, .main-right, .main-right-wrapper').removeClass('is-article')
+      }
+    }
+
+    const gray = "none"
+    const setGrayStyle = () => {
+      if (gray === 'none') {
+        return
+      } else if (gray === 'index') {
+        location.pathname === '/' ? $('#gray').show() : $('#gray').hide()
+      } else if (gray === 'all') {
+        $('#gray').show()
+      }
+    }
+    setGrayStyle()
+
+
+    window.onload = function () {
+      checkAndSetArticlePageLayout()
+      setTimeout(() => {
+        $('#load').slideUp()
+        $('#container').slideToggle()
+        setTimeout(() => {
+          initScroll();
+        }, 500)
+      }, 500)
+    }
+    
+    let status = 0
+    // 对所有链接跳转事件绑定pjax容器container
+    $(document).pjax('a[target!=_blank]', '#main-container', {
+      container: '#main-container',
+      fragment: '#main-container',
+      timeout: 8000
+    })
+
+    $(document).on('pjax:start', function() {
+    })
+    $(document).on('pjax:complete', function() {
+      status = 0
+      $('.main-container').addClass('to-up').on('animationend', function() {
+        $(this).removeClass('to-up')
+      })
+      setGrayStyle()
+      checkAndSetArticlePageLayout()
+    })
+    $(document).on('pjax:popstate', function() {
+      status = -1
+      checkAndSetArticlePageLayout()
+    });
+  </script>
+</body>
+</html>
