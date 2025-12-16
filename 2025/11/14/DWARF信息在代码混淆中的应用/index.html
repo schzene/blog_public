@@ -273,7 +273,7 @@
   const ipt = document.querySelector('#search-input')
   const btn = document.querySelector('#search-btn')
   const layer = document.querySelector('#search-layer')
-  const posts = JSON.parse(`[{"title":"DWARF信息在代码混淆中的应用","cover":"/imgs/cloud-moon.webp","path":"2025/11/14/DWARF信息在代码混淆中的应用/"},{"title":"Paillier半同态加密算法和优化加速","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/Paillier半同态加密算法和优化加速/"},{"title":"docker实现网络互通及流量控制","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/docker实现网络互通及流量控制/"},{"title":"Hello World","cover":"/imgs/default-cover.webp","path":"2025/10/31/hello-world/"}]`)
+  const posts = JSON.parse(`[{"title":"CKKS学习心得","cover":"/images/CKKS学习心得/ckks-process.svg","path":"2025/12/15/CKKS学习心得/"},{"title":"CKKS的Bootstrapping","cover":"/images/CKKS的Bootstrapping/sinx.png","path":"2025/12/15/CKKS的Bootstrapping/"},{"title":"DWARF信息在代码混淆中的应用","cover":"/imgs/cloud-moon.webp","path":"2025/11/14/DWARF信息在代码混淆中的应用/"},{"title":"Paillier半同态加密算法和优化加速","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/Paillier半同态加密算法和优化加速/"},{"title":"docker实现网络互通及流量控制","cover":"/imgs/default-cover.jpeg","path":"2025/10/31/docker实现网络互通及流量控制/"},{"title":"Hello World","cover":"/imgs/default-cover.webp","path":"2025/10/31/hello-world/"},{"title":"计算1/(x^n + 1)的不定积分","cover":"/images/计算1-xn-1的不定积分/cover.jpeg","path":"2025/12/16/计算1-x-n-1-的不定积分/"}]`)
   ipt.addEventListener('keyup', e => {
     if (e.key === 'Enter') {
       handleSearch()
@@ -327,8 +327,8 @@
   
     <div>
       <div class="main-left--motto">
-        <p>练得身形似鹤形</p>
-        <p>千株松下两函经</p>
+        <p>The quieter you become</p>
+        <p>The more you are able to hear</p>
       </div>
       <div class="main-left--github">
         <span class="line"></span>
@@ -338,19 +338,19 @@
       <div class="main-left--statics">
         <a href="/categories">
           <div>
-            <span>2</span>
+            <span>3</span>
             <span>分类</span>
           </div>
         </a>
         <a href="/tags">
           <div>
-            <span>3</span>
+            <span>5</span>
             <span>标签</span>
           </div>
         </a>
         <a href="/archives">
           <div>
-            <span>2 </span>
+            <span>3 </span>
             <span>归档</span>
           </div>
         </a>
@@ -393,7 +393,7 @@
       </h5>
       <p class="main-left--subtitle">
         <span>文章数目：</span>
-        <span>4 篇</span>
+        <span>7 篇</span>
       </p>
       <p class="main-left--subtitle">
         <span>最近动态：</span>
@@ -402,7 +402,7 @@
       <p class="main-left--subtitle">
         <span>上线时间：</span>
         <!-- server-rendered fallback; JS will update this value on the client using data-public-date -->
-        <span id="site-running-days" data-public-date="Fri Oct 31 2025 08:00:00 GMT+0800 (中国标准时间)">15天</span>
+        <span id="site-running-days" data-public-date="Fri Oct 31 2025 08:00:00 GMT+0800 (中国标准时间)">47天</span>
       </p>
       <p class="main-left--subtitle">
         <span>当前版本：</span>
@@ -485,7 +485,7 @@
 <p>2 在DWARF中记录变量在函数执行期间的物理位置：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;0x400&gt;: DW_TAG_variable</span><br><span class="line">           DW_AT_name: &quot;artif_mask_12&quot;</span><br><span class="line">           DW_AT_location: DW_OP_reg15 (R15寄存器)</span><br></pre></td></tr></table></figure>
 <p>3 动态更新：当重随机化触发时，监控进程解析目标程序堆栈后，通过DWARF定位当前栈帧的所有活跃掩码位置，随后监控进程将所在寄存器中的变量值替换为新掩码值。</p>
-<p><img src="/imgs/2025-11-14-095536.png" alt="动态更新"></p>
+<p><img src="/images/DWARF信息在代码混淆中的应用/动态更新.png" alt="动态更新"></p>
 <p>安全隔离性：DWARF段<strong>永不加载</strong>到目标程序内存，仅监控进程通过/proc/pid/mem接口访问，且DWARF存储掩码表索引而非实际密钥值。</p>
 <h2 id="使用LLVM-IR插桩掩码变量"><a href="#使用LLVM-IR插桩掩码变量" class="headerlink" title="使用LLVM IR插桩掩码变量"></a>使用LLVM IR插桩掩码变量</h2><p>目标：</p>
 <p>1 对每一个被混淆的代码区域，在入口插入全局变量<code>mask_&lt;size&gt;_&lt;idx&gt;</code>。</p>
@@ -528,6 +528,11 @@
       </div>
       
         <div class="catelogue catelogue-2">
+          
+            <p>
+              <span>上一篇：</span>
+              <a href="/2025/12/15/CKKS学习心得/">CKKS学习心得</a>
+            </p>
            
           
             <p>
