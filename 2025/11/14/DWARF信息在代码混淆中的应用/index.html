@@ -94,7 +94,9 @@
     })();
   </script>
 
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+  <!-- <script src='//unpkg.com/valine/dist/Valine.min.js'></script> -->
+  <script src='//unpkg.com/@waline/client@v2/dist/waline.js'></script>
+  <link href='//unpkg.com/@waline/client@v2/dist/waline.css' rel='stylesheet' />
   <script>
     document.title = `小栈 DWARF信息在代码混淆中的应用`
   </script>
@@ -397,12 +399,12 @@
       </p>
       <p class="main-left--subtitle">
         <span>最近动态：</span>
-        <span>今天</span>
+        <span>2周前</span>
       </p>
       <p class="main-left--subtitle">
         <span>上线时间：</span>
         <!-- server-rendered fallback; JS will update this value on the client using data-public-date -->
-        <span id="site-running-days" data-public-date="Fri Oct 31 2025 08:00:00 GMT+0800 (中国标准时间)">47天</span>
+        <span id="site-running-days" data-public-date="Fri Oct 31 2025 08:00:00 GMT+0800 (China Standard Time)">75天</span>
       </p>
       <p class="main-left--subtitle">
         <span>当前版本：</span>
@@ -549,17 +551,21 @@
 
 <script>
   // var定义，避免pjax重新进来造成的重复声明错误
-  var config = JSON.parse('{"enable":true,"appId":"UYwmowxyE3QOTsLR56RLlT80-gzGzoHsz","appKey":"2YkYBMBWYPBRiyyJZb77tsRr","placeholder":"请留下你宝贵的意见吧~","meta":["nick"],"recordIP":true,"visitor":true,"enableQQ":true}')
-  new Valine({
+  var config = JSON.parse('{"enable":true,"serverURL":"https://waline-i2c2j6wh2-shi-zhiyings-projects.vercel.app"}')
+  // new Valine({
+  //   el: '#vcomments',
+  //   appId: config.appId,
+  //   appKey: config.appKey,
+  //   placeholder: config.placeholder,
+  //   meta: config.meta,
+  //   recordIP: config.recordIP,
+  //   visitor: config.visitor,
+  //   enableQQ: config.enableQQ,
+  //   path: '2025/11/14/DWARF信息在代码混淆中的应用/'
+  // })
+  Waline.init({
     el: '#vcomments',
-    appId: config.appId,
-    appKey: config.appKey,
-    placeholder: config.placeholder,
-    meta: config.meta,
-    recordIP: config.recordIP,
-    visitor: config.visitor,
-    enableQQ: config.enableQQ,
-    path: '2025/11/14/DWARF信息在代码混淆中的应用/'
+    serverURL: config.serverURL,
   })
 </script>
 
@@ -618,7 +624,7 @@
       <p>Theme：<a target="_blank" rel="noopener" href="https://github.com/Aizener/hexo-theme-cola">Cola.</a></p>
     </div>
     <p class="main-right--refer">
-        Copyright © <span id="site-year">2025</span> 
+        Copyright © <span id="site-year">2026</span> 
         <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn"></a> 
     </p>
     </div>
